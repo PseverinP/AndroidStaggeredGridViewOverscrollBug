@@ -1,0 +1,123 @@
+diff -r ecef1b019362 -r 13d3cb25680f java/com/etsy/android/grid/StaggeredGridView.java
+--- a/java/com/etsy/android/grid/StaggeredGridView.java	Thu Feb 06 19:08:32 2014 -0600
++++ b/java/com/etsy/android/grid/StaggeredGridView.java	Wed Feb 12 21:31:28 2014 -0600
+@@ -379,6 +379,22 @@
+                 childrenLeft, gridChildTop, childRight, gridChildBottom);
+     }
+ 
++    private int getSafeBottom(int column) {
++        int value = mColumnBottoms[column];
++        if (Integer.MIN_VALUE != value) {
++            return value;
++        }
++        return getLowestPositionedBottom();
++    }
++    
++    private int getSafeTop(int column) {
++        int value = mColumnTops[column];
++        if (Integer.MAX_VALUE != value) {
++            return value;
++        }
++        return getHighestPositionedTop();
++    }    
++    
+     private void layoutGridChild(final View child, final int position,
+                                  final boolean flowDown,
+                                  final int childrenLeft, final int childRight) {
+@@ -393,11 +409,11 @@
+         int verticalMargins = childTopMargin + childBottomMargin;
+ 
+         if (flowDown) {
+-            gridChildTop = mColumnBottoms[column]; // the next items top is the last items bottom
++            gridChildTop = getSafeBottom(column); // the next items top is the last items bottom
+             gridChildBottom = gridChildTop + (getChildHeight(child) + verticalMargins);
+         }
+         else {
+-            gridChildBottom = mColumnTops[column]; // the bottom of the next column up is our top
++            gridChildBottom = getSafeTop(column); // the bottom of the next column up is our top
+             gridChildTop = gridChildBottom - (getChildHeight(child) + verticalMargins);
+         }
+ 
+@@ -470,11 +486,11 @@
+         int verticalMargins = childTopMargin + childBottomMargin;
+ 
+         if (flowDown) {
+-            gridChildTop = mColumnBottoms[column]; // the next items top is the last items bottom
++            gridChildTop = getSafeBottom(column); // the next items top is the last items bottom
+             gridChildBottom = gridChildTop + (getChildHeight(child) + verticalMargins);
+         }
+         else {
+-            gridChildBottom = mColumnTops[column]; // the bottom of the next column up is our top
++            gridChildBottom = getSafeTop(column); // the bottom of the next column up is our top
+             gridChildTop = gridChildBottom - (getChildHeight(child) + verticalMargins);
+         }
+ 
+@@ -685,8 +701,12 @@
+ 
+     private void offsetColumnTopAndBottom(final int offset, final int column) {
+         if (offset != 0) {
+-            mColumnTops[column] += offset;
+-            mColumnBottoms[column] += offset;
++            if (mColumnTops[column] != Integer.MAX_VALUE) {
++                mColumnTops[column] += offset;
++            }
++            if (mColumnBottoms[column] != Integer.MIN_VALUE) {
++                mColumnBottoms[column] += offset;
++            }
+         }
+     }
+ 
+@@ -765,7 +785,7 @@
+ 
+         // Repair the top and bottom column boundaries from the views we still have
+         Arrays.fill(mColumnTops, Integer.MAX_VALUE);
+-        Arrays.fill(mColumnBottoms, 0);
++        Arrays.fill(mColumnBottoms, Integer.MIN_VALUE);
+ 
+         for (int i = 0; i < getChildCount(); i++) {
+             final View child = getChildAt(i);
+@@ -1009,7 +1029,7 @@
+         initColumnTops();
+         initColumnBottoms();
+     }
+-
++    
+     private void initColumnTops() {
+         Arrays.fill(mColumnTops, getPaddingTop() + mGridPaddingTop);
+     }
+@@ -1040,7 +1060,7 @@
+         // the highest positioned bottom is the one with the lowest value :D
+         for (int i = 0; i < mColumnCount; i++) {
+             int bottom = mColumnBottoms[i];
+-            if (bottom < highestPositionedBottom) {
++            if (Integer.MIN_VALUE != bottom && bottom < highestPositionedBottom) {
+                 highestPositionedBottom = bottom;
+                 columnFound = i;
+             }
+@@ -1059,7 +1079,7 @@
+         // the lowest positioned bottom is the one with the highest value :D
+         for (int i = 0; i < mColumnCount; i++) {
+             int bottom = mColumnBottoms[i];
+-            if (bottom > lowestPositionedBottom) {
++            if (Integer.MIN_VALUE != bottom && bottom > lowestPositionedBottom) {
+                 lowestPositionedBottom = bottom;
+                 columnFound = i;
+             }
+@@ -1084,7 +1104,7 @@
+         // the lowest positioned top is the one with the highest value :D
+         for (int i = 0; i < mColumnCount; i++) {
+             int top = mColumnTops[i];
+-            if (top > lowestPositionedTop) {
++            if (Integer.MAX_VALUE != top && top > lowestPositionedTop) {
+                 lowestPositionedTop = top;
+                 columnFound = i;
+             }
+@@ -1103,7 +1123,7 @@
+         // the highest positioned top is the one with the lowest value :D
+         for (int i = 0; i < mColumnCount; i++) {
+             int top = mColumnTops[i];
+-            if (top < highestPositionedTop) {
++            if (Integer.MAX_VALUE != top && top < highestPositionedTop) {
+                 highestPositionedTop = top;
+                 columnFound = i;
+             }
